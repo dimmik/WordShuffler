@@ -1,0 +1,561 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Расчет бюджета похода</title>
+<meta name="description" content="Расчет бюджета похода">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<script>
+	// *** Domain model ************************ 
+	
+	// Family
+	function Family(name, peoplesNum, expenses) {
+		this.name = name;
+		this.peoplesNum = peoplesNum;
+		this.expenses = expenses;
+	}
+	Family.prototype.toDebugStr = function(){
+		return "f '" + this.name + "' of " + this.peoplesNum + " e: " + this.expenses; 
+	}
+	Family.prototype.debt = function(avg){
+		var toBeSpent = this.peoplesNum * avg;
+		return (toBeSpent - this.expenses);
+	}
+	
+	// Pohod
+	function Pohod(date, name) {
+		this.date = new Date(date);
+		this.name = name;
+		this.families = new Array(); // Family[]
+	}
+	Pohod.prototype.toDebugStr = function(){
+		var s = this.date + " - " + this.name + " - avg: " + this.averageExpense();
+		for (var i = 0; i < this.families.length ; i ++)
+		{
+			s += "\n" + this.families[i].toDebugStr() + " d: " + this.families[i].debt(this.averageExpense());
+		}
+		return s;
+	}
+	Pohod.prototype.averageExpense = function(){
+		if (this.totalPeoples() == 0) return 0;
+		return this.totalExpense() / this.totalPeoples();
+	}
+	Pohod.prototype.totalExpense = function(){
+		var totalExpense = 0;
+		for (var i = 0; i < this.families.length ; i ++)
+		{
+			totalExpense += this.families[i].expenses * 1;
+		}
+		return totalExpense;
+	}
+	Pohod.prototype.totalPeoples = function(){
+		var totalPeoples = 0;
+		for (var i = 0; i < this.families.length ; i ++)
+		{
+			totalPeoples += this.families[i].peoplesNum * 1;
+		}
+		return totalPeoples;
+	}
+
+	// List
+	function ListOfPohods(pohodsJson){
+		this.pohods = new Array();
+		this.selected = -1;
+		if (pohodsJson == "" || typeof(pohodsJson) == 'undefined')
+		{
+			return;
+		}
+		
+		var pp = JSON.parse(pohodsJson);
+		this.selected = pp.selected;
+
+		for (var i = 0; i < pp.pohods.length; i++)
+		{
+			var ppp = pp.pohods[i];
+			var nP = new Pohod(ppp.date, ppp.name);
+			for (var j = 0; j < ppp.families.length; j++)
+			{
+				var ff = ppp.families[j];
+				var family = new Family(ff.name, ff.peoplesNum, ff.expenses);
+				nP.families[nP.families.length] = family;
+			}
+			this.pohods[this.pohods.length] = nP;
+		}
+	}
+	ListOfPohods.prototype.add = function (p) {
+		var s = this.pohods.length;
+		this.pohods[s] = p;
+		this.selected = s;
+	}
+	ListOfPohods.prototype.toDebugStr = function(){
+		return "len: " + this.pohods.length;
+	}
+	// /*** Domain model ************************ 
+
+	// *** Storage ************************ 
+	function storeToLocalStorage( lp ){
+		var json = JSON.stringify(lp);
+		localStorage.lp = json;
+	}
+	
+	function loadFromLocalStorage(){
+		var psJson = localStorage.lp;
+		if (typeof(psJson) != 'undefined')
+		{
+			return new ListOfPohods(psJson);
+		}
+		return new ListOfPohods("");
+	}
+	
+	function clearLocalStorage(){
+		localStorage.removeItem("lp");
+	}
+
+	function addNewPohod(){
+		var p = new Pohod(new Date(), document.getElementById('newPohodName').value);
+		document.getElementById('newPohodName').value = '';
+		ps.add(p);
+		storeToLocalStorage(ps);
+		initPohodsListUI();
+	}
+	function deletePohod(pnum){
+		ps.pohods.splice(pnum, 1);
+		ps.selected = -1;
+		storeToLocalStorage(ps);
+		cleanUIcontent();
+		initPohodsListUI();
+	}
+	function deleteFamily(pnum, fnum){
+		ps.pohods[pnum].families.splice(fnum, 1);
+		storeToLocalStorage(ps);
+		initCurrentPohod(pnum);
+	}
+	function updateFamily(pnum, fnum, name, peoplesNum, expenses){
+		var f = ps.pohods[pnum].families[fnum];
+		if (
+			f.name == name 
+			&& f.peoplesNum == peoplesNum 
+			&& f.expenses == expenses)
+		{
+			return;
+		}
+		if (
+		name == '' || peoplesNum == '' || expenses == ''
+		)
+		{
+			initCurrentPohod(pnum);
+			return;
+		}
+		f.name = name;
+		f.peoplesNum = peoplesNum;
+		f.expenses = expenses;
+		storeToLocalStorage(ps);
+		initCurrentPohod(pnum);
+	}
+	
+	function addNewFamily(pnum) {
+		var f = new Family(document.getElementById('nfName').value, document.getElementById('nfPN').value, document.getElementById('nfExp').value)
+		ps.pohods[pnum].families[ps.pohods[pnum].families.length] = f;
+		storeToLocalStorage(ps);
+		initCurrentPohod(pnum);
+	}
+	// /*** Storage ************************ 
+
+	// *** UI ******************************
+	function updateUI(){
+		var div = document.getElementById("GenericUI");
+		var template = document.getElementById("GenericUITemplate").innerHTML;
+		for (var k in UIcontent){
+			//alert("key: " + k + " v: " + UIcontent[k]);
+			template = template.replace("${"+k+"}", UIcontent[k]);
+		}
+		//alert("t: " + template);
+		div.innerHTML = template;
+		setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
+	}
+	function getpList(){
+		var t = document.getElementById("pohodsListTemplate").innerHTML;
+		var s = "";
+		var optionTemplate = document.getElementById("pohodOptionTemplate").innerHTML;
+		for (i = 0; i < ps.pohods.length; i++)
+		{
+			var o = optionTemplate.replace(/\$\{name\}/g, ps.pohods[i].name);
+			var d = ps.pohods[i].date;
+			o = o.replace(/\$\{date\}/g, d.toDateString());
+			o = o.replace(/\$\{pnum\}/g, i);
+			o = o.replace(/\$\{selected\}/g, ps.selected == i ? 'selected' : '')
+			s += o;
+		}
+		t = t.replace(/\$\{pohods\}/g, s);
+
+		t = t.replace(/\$\{id\}/g, "pListUI");
+		return t;
+	}
+	function initPohodsListUI(){
+		UIcontent["pListUI"] = getpList();
+		updateUI();
+		
+		if (ps.selected > -1)
+		{
+			initCurrentPohod(ps.selected);
+		}
+	}
+
+	function initCurrentPohod(pnumX){
+		var pnum = -1;
+		if (typeof(pnumX) == 'undefined')
+		{
+			pnum = document.getElementById("pohodSelect").options[document.getElementById("pohodSelect").selectedIndex].value;
+			if (pnum == -1)
+			{
+				return;
+			}
+		} else {
+			pnum = pnumX;
+		}
+
+		ps.selected = pnum;
+		storeToLocalStorage(ps);
+
+		var p = ps.pohods[pnum];
+		var div = document.getElementById("currentPohod");
+//		var s = "";
+		// header
+		var pTemplate = document.getElementById("pohodHeaderTemplate").innerHTML;
+		var o = pTemplate.replace(/\$\{name\}/g, p.name);
+		o = o.replace(/\$\{date\}/g, p.date.toDateString());
+		o = o.replace(/\$\{avgExpense\}/g, p.averageExpense().toFixed(0));
+		o = o.replace(/\$\{totalExpense\}/g, p.totalExpense().toFixed(0));
+		o = o.replace(/\$\{totalPeoples\}/g, p.totalPeoples().toFixed(1));
+		o = o.replace(/\$\{pnum\}/g, pnum);
+
+		o = o.replace(/\$\{id\}/g, "pHeaderUI");
+		UIcontent["pHeaderUI"] = o;
+
+//		s += o;
+		// families list
+		var flT = document.getElementById("familyListTemplate").innerHTML;
+		var fl = "";
+		for (i = 0; i < p.families.length; i++)
+		{
+			var f = p.families[i];
+			var debt = f.debt(p.averageExpense())*1;
+			var fTemplate = document.getElementById("oneFamilyTemplate").innerHTML;
+			o = fTemplate.replace(/\$\{name\}/g, f.name);
+			o = o.replace(/\$\{peoplesNum\}/g, f.peoplesNum * 1);
+			o = o.replace(/\$\{expenses\}/g, (f.expenses*1).toFixed(0));
+			o = o.replace(/\$\{debt\}/g, debt.toFixed(0));
+			o = o.replace(/\$\{debtS\}/g, debt > 0 ? '1' : '0');
+			o = o.replace(/\$\{pnum\}/g, pnum);
+			o = o.replace(/\$\{fnum\}/g, i);
+			o = o.replace(/\$\{mod2\}/g, i%2);
+			fl += o;
+		} 
+		flT = flT.replace(/\$\{families\}/g, fl);
+		flT = flT.replace(/\$\{id\}/g, "familiesListUI");
+		UIcontent["familiesListUI"] = flT;
+		
+//		s += flT;
+
+		var addF = document.getElementById("addFamilyTemplate").innerHTML.replace(/\$\{pnum\}/g, pnum);
+		addF = addF.replace(/\$\{id\}/g, "addFamilyUI");
+		UIcontent["addFamilyUI"] = addF;
+
+		UIcontent["pListUI"] = getpList();
+		updateUI();
+
+//		s += addF;
+		//div.innerHTML = s;
+	}
+	function toggleCollapsed(btn, collapsable){
+		var nowCollapsed = false;
+		if (typeof(localStorage.infoCollapsed) == 'undefined' )
+		{
+			nowCollapsed = true;
+		} else if (localStorage.infoCollapsed == 'Y')
+		{
+			nowCollapsed = true;
+		} else {
+			nowCollapsed = false;
+		}
+		//alert('now collapsed: ' + nowCollapsed);
+		var toggled = false;
+		if (nowCollapsed)
+		{
+			//alert('in if true ' + nowCollapsed);
+			toggled = false;
+		} else {
+			//alert('in else ' + nowCollapsed);
+			toggled = true;
+		}
+		//alert('toggled: ' + toggled);
+		localStorage.infoCollapsed = toggled ? 'Y' : 'N';
+		setCollapsed(btn, collapsable);
+	}
+	function setCollapsed(btn, collapsable){
+		btn.innerHTML = localStorage.infoCollapsed == 'Y' ? '+' : '-';
+		collapsable.style.display = localStorage.infoCollapsed == 'Y' ? 'none' : 'block';
+	}
+
+	// /*** UI ******************************
+	
+/*
+	${pListUI}
+	<hr>
+	${addNewPohod}
+	<hr>
+	${pHeaderUI}
+	<hr>
+	${familiesList}
+	<hr>
+	${addFamily}
+*/
+	function cleanUIcontent(){
+		UIcontent = new Array();
+		UIcontent["pListUI"] = "--"; // +
+		UIcontent["addNewPohodUI"] = document.getElementById("addNewPohodTemplate").innerHTML; // -!!! 
+		UIcontent["pHeaderUI"] = "--"; // +
+		UIcontent["familiesListUI"] = "--"; // +
+		UIcontent["addFamilyUI"] = "--"; // +
+	}
+	function init(){
+		cleanUIcontent();
+		ps = loadFromLocalStorage();
+		initPohodsListUI();
+		updateUI();
+	}
+</script>
+
+</head>
+<style>
+
+  .input-container {
+    font-size: 1.5em;
+    text-align: left;
+  }
+
+  .input-container select {
+    font-size: inherit;
+  }
+  .input-container input {
+    font-size: inherit;
+  }
+  .input-container button {
+    font-size: inherit;
+  }
+
+	body {
+      margin: 0;
+      padding: 2px;
+      background-color: #FFFFFF;
+      color: #000000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .tablewrapper {
+      position: relative;
+    }
+    .table {
+      display: table;
+    }
+    .row {
+      display: table-row;
+    }
+    .cell {
+      display: table-cell;
+	  border: 1px solid blue;
+      padding: 0.2em;
+    }
+    .cell.g
+    {
+		border: 1px solid green;
+	}
+    .cell.empty
+    {
+      border: none;
+      width: 30em;
+    }
+    .cell.rowspanned {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100px;
+    }
+
+	.bgc0 {
+		background-color: #CCFF99;
+	}
+	.bgc1 {
+		background-color: #EEEEEE;
+	}
+	.bgcN {
+		background-color: #FFCCFF;
+	}
+	.debt0 {
+		color: green;
+		text-align: center;
+	}
+	.debt1{
+		color: red;
+		text-align: center;
+	}
+
+</style>
+
+<body onLoad="init();">
+
+<div id="GenericUI">
+</div>
+
+<div style="display:none">
+	Щаблоны для вывода:
+	-- Список существующих походов
+	<div id='pohodsListTemplate'>
+		<div style="display:inline;" id="${id}">
+				<select id='pohodSelect' onChange='initCurrentPohod();'>
+				<option value='-1'>-- select --</option>
+				${pohods}
+				</select>
+		</div>
+	</div>
+
+	-- Опция в списке походов
+	<div id='pohodOptionTemplate'>
+		<option value='${pnum}' ${selected}>${name}</option>
+	</div>
+
+	-- Заголовок похода
+	<div id='pohodHeaderTemplate'>
+		<div style="display:inline;" id="${id}">
+			<b>"${name}"</b> <button onclick="if (confirm('delete \'${name}\'?')) deletePohod(${pnum});">del</button>
+			<br><span style="font-size: 0.7em;">${date}</span> 
+			<br>Всего: <b>${totalExpense}</b> р.
+			<br>Людей: <b>${totalPeoples}</b> 
+			<br>В среднем: <b>${avgExpense}</b> р.
+		</div>
+	</div>
+
+	-- Добавление нового похода
+	<div id='addNewPohodTemplate'>
+		<div style="display:inline;" id="${id}">
+			<input type='text' id="newPohodName" 
+			value="+Поход"  style="color:#AAAAAA"
+				onClick="if ('+Поход' == this.value){ this.value = ''; this.style.color = '#000000';}"
+				onfocusout="if ('' == this.value) { this.value = '+Поход'; this.style.color = '#AAAAAA';}"
+				>
+			<button onClick="if ('+Имя нового похода' != this.value) addNewPohod()">Добавить</button>
+		</div>
+	</div>
+
+	-- Одна семья
+	<div id='oneFamilyTemplate'>
+		<div class="row">
+			<div class="cell bgc${mod2}">
+				<input type="text" value="${name}" style="width: 80%" 
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, this.value, '${peoplesNum}', '${expenses}');"/> 
+				<input type="text" value="${peoplesNum}" style="width: 15%;"
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', this.value, '${expenses}');"
+				/>
+			</div>
+			<div class="cell bgc${mod2} debt${debtS}">			
+				<b>${debt}</b>
+			</div>
+			<div class="cell bgc${mod2}">
+				<button onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">del</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="empty cell bgc${mod2}">			
+				Траты: <input type="text" value="${expenses}" style="width: 4em"
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', this.value);"
+
+				/> р.
+			</div>
+			<div class="empty cell bgc${mod2}">
+			</div>
+		</div>
+	</div>
+	-- Список семей
+	<div id='familyListTemplate'>
+			${families}
+	</div>	
+
+	-- добавление новой семьи
+	<div id='addFamilyTemplate'>
+		<!--<div style="display:inline;" id="${id}">
+			name: <input type='text' id='nfName'> 
+			num: <input type='text' id='nfPN' value='1' size='2'> 
+			<b>exp:</b> <input type='text' id='nfExp' value='0' size='5'>
+			<button onClick='addNewFamily(${pnum})'>+</button><br/>
+		</div>-->
+
+	
+
+		<div class="row">
+			<div class="g cell bgcN">
+				<input type='text' id='nfName' style="width:10em;color:#AAAAAA"
+				value="+Участник" 
+				onClick="if ('+Участник' == this.value){ this.value = ''; this.style.color = '#000000';}"
+				onfocusout="if ('' == this.value) { this.value = '+Участник'; this.style.color = '#AAAAAA';}"
+				> (<input type="text" id='nfPN' value="1" style="width:2em;"/> ч.) 
+			</div>
+			<div class="g cell bgcN">			
+				<center><b>--</b></center>
+			</div>
+			<div class="g cell bgcN">
+				<button onClick='addNewFamily(${pnum})'>add</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="empty cell bgcN">			
+				Траты: <input type="text" value="0" style="width: 4em" id='nfExp'/> р.
+			</div>
+			<div class="empty cell bgcN">
+			</div>
+		</div>
+	</div>
+
+	--- Общий интерфейс.
+	Элементы
+	- Список походов
+	- Добавление нового похода
+	- Выбранный поход
+	- Детали выбранного похода
+	<div id="GenericUITemplate">
+	<div class="input-container">
+		<div id="${id}" class="tablewrapper">
+			<div class="table">
+				<div class="row">
+					<div class="empty cell">			
+						<div style="border: 1px solid blue;">
+							<button id="collapseButton" onClick="toggleCollapsed(this, document.getElementById('collapsable'));">-</button>
+							${pListUI}
+							<div id="collapsable">
+								${pHeaderUI}
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="empty cell">
+						<div class="table">
+						${familiesListUI}
+						${addFamilyUI}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<hr>
+		${addNewPohodUI}
+	</div>
+	</div>
+</div>
+
+</body>
+</html>
