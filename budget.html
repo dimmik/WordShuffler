@@ -166,6 +166,15 @@
 		storeToLocalStorage(ps);
 		initCurrentTrip(pnum);
 	}
+	function exportToJSON(txt){
+		var json = JSON.stringify(ps, null, 4);
+		txt.value = json;
+	}
+	function importFromJSON(txt) {
+		var json = txt.value;
+		localStorage.lp = json;
+		init();
+	}
 	// /*** Storage ************************ 
 
 	// *** UI ******************************
@@ -336,7 +345,9 @@
 		UIcontent["pHeaderUI"] = "--"; // +
 		UIcontent["familiesListUI"] = "--"; // +
 		UIcontent["addFamilyUI"] = "--"; // +
-		UIcontent["currencySignUI"] = document.getElementById("currencySignTemplate").innerHTML; 
+		UIcontent["currencySignUI"] = document.getElementById("currencySignTemplate").innerHTML;
+		// jsonExportImportTemplate
+		UIcontent["jsonExportImportUI"] = document.getElementById("jsonExportImportTemplate").innerHTML;
 	}
 	function init(){
 		cleanUIcontent();
@@ -539,6 +550,14 @@
 			</div>
 		</div>
 	</div>
+	<div id="jsonExportImportTemplate">
+		<div>
+			<textarea id='json' style="width: 40em; height: 15em;"></textarea><br/>
+			<button onClick="exportToJSON(document.getElementById('json'))"/>Export</button>
+			<button onClick="importFromJSON(document.getElementById('json'))"/>Import</button>
+			<hr/>
+		</div>
+	</div>
 
 	--- Общий интерфейс.
 	Элементы
@@ -575,6 +594,8 @@
 		${addNewTripUI}
 		<hr>
 		${currencySignUI}
+		<hr>
+		${jsonExportImportUI}
 	</div>
 	</div>
 </div>
