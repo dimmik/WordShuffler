@@ -25,13 +25,13 @@
 		return (toBeSpent - this.expenses);
 	}
 	
-	// Pohod
-	function Pohod(date, name) {
+	// Trip
+	function Trip(date, name) {
 		this.date = new Date(date);
 		this.name = name;
 		this.families = new Array(); // Family[]
 	}
-	Pohod.prototype.toDebugStr = function(){
+	Trip.prototype.toDebugStr = function(){
 		var s = this.date + " - " + this.name + " - avg: " + this.averageExpense();
 		for (var i = 0; i < this.families.length ; i ++)
 		{
@@ -39,11 +39,11 @@
 		}
 		return s;
 	}
-	Pohod.prototype.averageExpense = function(){
+	Trip.prototype.averageExpense = function(){
 		if (this.totalPeoples() == 0) return 0;
 		return this.totalExpense() / this.totalPeoples();
 	}
-	Pohod.prototype.totalExpense = function(){
+	Trip.prototype.totalExpense = function(){
 		var totalExpense = 0;
 		for (var i = 0; i < this.families.length ; i ++)
 		{
@@ -51,7 +51,7 @@
 		}
 		return totalExpense;
 	}
-	Pohod.prototype.totalPeoples = function(){
+	Trip.prototype.totalPeoples = function(){
 		var totalPeoples = 0;
 		for (var i = 0; i < this.families.length ; i ++)
 		{
@@ -61,37 +61,41 @@
 	}
 
 	// List
-	function ListOfPohods(pohodsJson){
-		this.pohods = new Array();
+	function ListOfTrips(tripsJson){
+		this.trips = new Array();
 		this.selected = -1;
-		if (pohodsJson == "" || typeof(pohodsJson) == 'undefined')
+		if (tripsJson == "" || typeof(tripsJson) == 'undefined')
 		{
 			return;
 		}
 		
-		var pp = JSON.parse(pohodsJson);
+		var pp = JSON.parse(tripsJson);
 		this.selected = pp.selected;
-
-		for (var i = 0; i < pp.pohods.length; i++)
+		if (typeof(pp.trips) == 'undefined')
 		{
-			var ppp = pp.pohods[i];
-			var nP = new Pohod(ppp.date, ppp.name);
+			return;
+		}
+
+		for (var i = 0; i < pp.trips.length; i++)
+		{
+			var ppp = pp.trips[i];
+			var nP = new Trip(ppp.date, ppp.name);
 			for (var j = 0; j < ppp.families.length; j++)
 			{
 				var ff = ppp.families[j];
 				var family = new Family(ff.name, ff.peoplesNum, ff.expenses);
 				nP.families[nP.families.length] = family;
 			}
-			this.pohods[this.pohods.length] = nP;
+			this.trips[this.trips.length] = nP;
 		}
 	}
-	ListOfPohods.prototype.add = function (p) {
-		var s = this.pohods.length;
-		this.pohods[s] = p;
+	ListOfTrips.prototype.add = function (p) {
+		var s = this.trips.length;
+		this.trips[s] = p;
 		this.selected = s;
 	}
-	ListOfPohods.prototype.toDebugStr = function(){
-		return "len: " + this.pohods.length;
+	ListOfTrips.prototype.toDebugStr = function(){
+		return "len: " + this.trips.length;
 	}
 	// /*** Domain model ************************ 
 
@@ -105,36 +109,36 @@
 		var psJson = localStorage.lp;
 		if (typeof(psJson) != 'undefined')
 		{
-			return new ListOfPohods(psJson);
+			return new ListOfTrips(psJson);
 		}
-		return new ListOfPohods("");
+		return new ListOfTrips("");
 	}
 	
 	function clearLocalStorage(){
 		localStorage.removeItem("lp");
 	}
 
-	function addNewPohod(){
-		var p = new Pohod(new Date(), document.getElementById('newPohodName').value);
-		document.getElementById('newPohodName').value = '';
+	function addNewTrip(){
+		var p = new Trip(new Date(), document.getElementById('newTripName').value);
+		document.getElementById('newTripName').value = '';
 		ps.add(p);
 		storeToLocalStorage(ps);
-		initPohodsListUI();
+		initTripsListUI();
 	}
-	function deletePohod(pnum){
-		ps.pohods.splice(pnum, 1);
+	function deleteTrip(pnum){
+		ps.trips.splice(pnum, 1);
 		ps.selected = -1;
 		storeToLocalStorage(ps);
 		cleanUIcontent();
-		initPohodsListUI();
+		initTripsListUI();
 	}
 	function deleteFamily(pnum, fnum){
-		ps.pohods[pnum].families.splice(fnum, 1);
+		ps.trips[pnum].families.splice(fnum, 1);
 		storeToLocalStorage(ps);
-		initCurrentPohod(pnum);
+		initCurrentTrip(pnum);
 	}
 	function updateFamily(pnum, fnum, name, peoplesNum, expenses){
-		var f = ps.pohods[pnum].families[fnum];
+		var f = ps.trips[pnum].families[fnum];
 		if (
 			f.name == name 
 			&& f.peoplesNum == peoplesNum 
@@ -146,21 +150,21 @@
 		name == '' || peoplesNum == '' || expenses == ''
 		)
 		{
-			initCurrentPohod(pnum);
+			initCurrentTrip(pnum);
 			return;
 		}
 		f.name = name;
 		f.peoplesNum = peoplesNum;
 		f.expenses = expenses;
 		storeToLocalStorage(ps);
-		initCurrentPohod(pnum);
+		initCurrentTrip(pnum);
 	}
 	
 	function addNewFamily(pnum) {
 		var f = new Family(document.getElementById('nfName').value, document.getElementById('nfPN').value, document.getElementById('nfExp').value)
-		ps.pohods[pnum].families[ps.pohods[pnum].families.length] = f;
+		ps.trips[pnum].families[ps.trips[pnum].families.length] = f;
 		storeToLocalStorage(ps);
-		initCurrentPohod(pnum);
+		initCurrentTrip(pnum);
 	}
 	// /*** Storage ************************ 
 
@@ -178,38 +182,38 @@
 		setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
 	}
 	function getpList(){
-		var t = document.getElementById("pohodsListTemplate").innerHTML;
+		var t = document.getElementById("tripsListTemplate").innerHTML;
 		var s = "";
-		var optionTemplate = document.getElementById("pohodOptionTemplate").innerHTML;
-		for (i = 0; i < ps.pohods.length; i++)
+		var optionTemplate = document.getElementById("tripOptionTemplate").innerHTML;
+		for (i = 0; i < ps.trips.length; i++)
 		{
-			var o = optionTemplate.replace(/\$\{name\}/g, ps.pohods[i].name);
-			var d = ps.pohods[i].date;
+			var o = optionTemplate.replace(/\$\{name\}/g, ps.trips[i].name);
+			var d = ps.trips[i].date;
 			o = o.replace(/\$\{date\}/g, d.toDateString());
 			o = o.replace(/\$\{pnum\}/g, i);
 			o = o.replace(/\$\{selected\}/g, ps.selected == i ? 'selected' : '')
 			s += o;
 		}
-		t = t.replace(/\$\{pohods\}/g, s);
+		t = t.replace(/\$\{trips\}/g, s);
 
 		t = t.replace(/\$\{id\}/g, "pListUI");
 		return t;
 	}
-	function initPohodsListUI(){
+	function initTripsListUI(){
 		UIcontent["pListUI"] = getpList();
 		updateUI();
 		
 		if (ps.selected > -1)
 		{
-			initCurrentPohod(ps.selected);
+			initCurrentTrip(ps.selected);
 		}
 	}
 
-	function initCurrentPohod(pnumX){
+	function initCurrentTrip(pnumX){
 		var pnum = -1;
 		if (typeof(pnumX) == 'undefined')
 		{
-			pnum = document.getElementById("pohodSelect").options[document.getElementById("pohodSelect").selectedIndex].value;
+			pnum = document.getElementById("tripSelect").options[document.getElementById("tripSelect").selectedIndex].value;
 			if (pnum == -1)
 			{
 				return;
@@ -221,11 +225,11 @@
 		ps.selected = pnum;
 		storeToLocalStorage(ps);
 
-		var p = ps.pohods[pnum];
-		var div = document.getElementById("currentPohod");
+		var p = ps.trips[pnum];
+		var div = document.getElementById("currentTrip");
 //		var s = "";
 		// header
-		var pTemplate = document.getElementById("pohodHeaderTemplate").innerHTML;
+		var pTemplate = document.getElementById("tripHeaderTemplate").innerHTML;
 		var o = pTemplate.replace(/\$\{name\}/g, p.name);
 		o = o.replace(/\$\{date\}/g, p.date.toDateString());
 		o = o.replace(/\$\{avgExpense\}/g, p.averageExpense().toFixed(0));
@@ -317,7 +321,7 @@
 /*
 	${pListUI}
 	<hr>
-	${addNewPohod}
+	${addNewTrip}
 	<hr>
 	${pHeaderUI}
 	<hr>
@@ -328,7 +332,7 @@
 	function cleanUIcontent(){
 		UIcontent = new Array();
 		UIcontent["pListUI"] = "--"; // +
-		UIcontent["addNewPohodUI"] = document.getElementById("addNewPohodTemplate").innerHTML; 
+		UIcontent["addNewTripUI"] = document.getElementById("addNewTripTemplate").innerHTML; 
 		UIcontent["pHeaderUI"] = "--"; // +
 		UIcontent["familiesListUI"] = "--"; // +
 		UIcontent["addFamilyUI"] = "--"; // +
@@ -337,7 +341,7 @@
 	function init(){
 		cleanUIcontent();
 		ps = loadFromLocalStorage();
-		initPohodsListUI();
+		initTripsListUI();
 		updateUI();
 	}
 </script>
@@ -425,11 +429,11 @@
 <div style="display:none">
 	Щаблоны для вывода:
 	-- Список существующих походов
-	<div id='pohodsListTemplate'>
+	<div id='tripsListTemplate'>
 		<div style="display:inline;" id="${id}">
-				<select id='pohodSelect' onChange='initCurrentPohod();'>
+				<select id='tripSelect' onChange='initCurrentTrip();'>
 				<option value='-1'>-- select --</option>
-				${pohods}
+				${trips}
 				</select>
 		</div>
 	</div>
@@ -438,14 +442,14 @@
 		Currency sign: <input type="text" style="width: 3em;" value="${currencySign}" onChange='updateCurrencySign(this.value);'>
 	</div>
 	-- Опция в списке походов
-	<div id='pohodOptionTemplate'>
+	<div id='tripOptionTemplate'>
 		<option value='${pnum}' ${selected}>${name}</option>
 	</div>
 
 	-- Заголовок похода
-	<div id='pohodHeaderTemplate'>
+	<div id='tripHeaderTemplate'>
 		<div style="display:inline;" id="${id}">
-			<b>"${name}"</b> <button onclick="if (confirm('delete \'${name}\'?')) deletePohod(${pnum});">del</button>
+			<b>"${name}"</b> <button onclick="if (confirm('delete \'${name}\'?')) deleteTrip(${pnum});">del</button>
 			<br><span style="font-size: 0.7em;">${date}</span> 
 			<br>Total: <b>${totalExpense}</b> ${currencySign}
 			<br>People: <b>${totalPeoples}</b> 
@@ -454,14 +458,14 @@
 	</div>
 
 	-- Добавление нового похода
-	<div id='addNewPohodTemplate'>
+	<div id='addNewTripTemplate'>
 		<div style="display:inline;" id="${id}">
-			<input type='text' id="newPohodName" 
+			<input type='text' id="newTripName" 
 			value="+Trip"  style="color:#AAAAAA"
 				onClick="if ('+Trip' == this.value){ this.value = ''; this.style.color = '#000000';}"
 				onfocusout="if ('' == this.value) { this.value = '+Trip'; this.style.color = '#AAAAAA';}"
 				>
-			<button onClick="if ('+Имя нового похода' != this.value) addNewPohod()">Add</button>
+			<button onClick="if ('+Имя нового похода' != this.value) addNewTrip()">Add</button>
 		</div>
 	</div>
 
@@ -568,7 +572,7 @@
 			</div>
 		</div>
 		<hr>
-		${addNewPohodUI}
+		${addNewTripUI}
 		<hr>
 		${currencySignUI}
 	</div>
