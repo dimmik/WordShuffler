@@ -2,7 +2,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Расчет бюджета похода</title>
+<title>Trip Budget Calculator</title>
 <meta name="description" content="Расчет бюджета похода">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -173,6 +173,7 @@
 			template = template.replace("${"+k+"}", UIcontent[k]);
 		}
 		//alert("t: " + template);
+		template = template.replace(/\$\{currencySign\}/g, getCurrencySign());
 		div.innerHTML = template;
 		setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
 	}
@@ -299,7 +300,18 @@
 		btn.innerHTML = localStorage.infoCollapsed == 'Y' ? '+' : '-';
 		collapsable.style.display = localStorage.infoCollapsed == 'Y' ? 'none' : 'block';
 	}
-
+	function getCurrencySign(){
+		var cc = localStorage.currentCurrencySign;
+		if (typeof(cc) == 'undefined')
+		{
+			return 'р.';
+		}
+		return cc;
+	}
+	function updateCurrencySign(sign){
+		localStorage.currentCurrencySign = sign;
+		updateUI();
+	}
 	// /*** UI ******************************
 	
 /*
@@ -316,10 +328,11 @@
 	function cleanUIcontent(){
 		UIcontent = new Array();
 		UIcontent["pListUI"] = "--"; // +
-		UIcontent["addNewPohodUI"] = document.getElementById("addNewPohodTemplate").innerHTML; // -!!! 
+		UIcontent["addNewPohodUI"] = document.getElementById("addNewPohodTemplate").innerHTML; 
 		UIcontent["pHeaderUI"] = "--"; // +
 		UIcontent["familiesListUI"] = "--"; // +
 		UIcontent["addFamilyUI"] = "--"; // +
+		UIcontent["currencySignUI"] = document.getElementById("currencySignTemplate").innerHTML; 
 	}
 	function init(){
 		cleanUIcontent();
@@ -421,6 +434,9 @@
 		</div>
 	</div>
 
+	<div id="currencySignTemplate">
+		Currency sign: <input type="text" style="width: 3em;" value="${currencySign}" onChange='updateCurrencySign(this.value);'>
+	</div>
 	-- Опция в списке походов
 	<div id='pohodOptionTemplate'>
 		<option value='${pnum}' ${selected}>${name}</option>
@@ -431,9 +447,9 @@
 		<div style="display:inline;" id="${id}">
 			<b>"${name}"</b> <button onclick="if (confirm('delete \'${name}\'?')) deletePohod(${pnum});">del</button>
 			<br><span style="font-size: 0.7em;">${date}</span> 
-			<br>Всего: <b>${totalExpense}</b> р.
-			<br>Людей: <b>${totalPeoples}</b> 
-			<br>В среднем: <b>${avgExpense}</b> р.
+			<br>Total: <b>${totalExpense}</b> ${currencySign}
+			<br>People: <b>${totalPeoples}</b> 
+			<br>Average: <b>${avgExpense}</b> ${currencySign}
 		</div>
 	</div>
 
@@ -441,11 +457,11 @@
 	<div id='addNewPohodTemplate'>
 		<div style="display:inline;" id="${id}">
 			<input type='text' id="newPohodName" 
-			value="+Поход"  style="color:#AAAAAA"
-				onClick="if ('+Поход' == this.value){ this.value = ''; this.style.color = '#000000';}"
-				onfocusout="if ('' == this.value) { this.value = '+Поход'; this.style.color = '#AAAAAA';}"
+			value="+Trip"  style="color:#AAAAAA"
+				onClick="if ('+Trip' == this.value){ this.value = ''; this.style.color = '#000000';}"
+				onfocusout="if ('' == this.value) { this.value = '+Trip'; this.style.color = '#AAAAAA';}"
 				>
-			<button onClick="if ('+Имя нового похода' != this.value) addNewPohod()">Добавить</button>
+			<button onClick="if ('+Имя нового похода' != this.value) addNewPohod()">Add</button>
 		</div>
 	</div>
 
@@ -462,7 +478,7 @@
 				/>
 			</div>
 			<div class="cell bgc${mod2} debt${debtS}">			
-				<b>${debt}</b>
+				<b>${debt}</b> ${currencySign}
 			</div>
 			<div class="cell bgc${mod2}">
 				<button onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">del</button>
@@ -470,11 +486,11 @@
 		</div>
 		<div class="row">
 			<div class="empty cell bgc${mod2}">			
-				Траты: <input type="text" value="${expenses}" style="width: 4em"
+				Expenses: <input type="text" value="${expenses}" style="width: 4em"
 					onfocus="this.style.color = 'green';"
 					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', this.value);"
 
-				/> р.
+				/> ${currencySign}
 			</div>
 			<div class="empty cell bgc${mod2}">
 			</div>
@@ -499,9 +515,9 @@
 		<div class="row">
 			<div class="g cell bgcN">
 				<input type='text' id='nfName' style="width:10em;color:#AAAAAA"
-				value="+Участник" 
-				onClick="if ('+Участник' == this.value){ this.value = ''; this.style.color = '#000000';}"
-				onfocusout="if ('' == this.value) { this.value = '+Участник'; this.style.color = '#AAAAAA';}"
+				value="+Family" 
+				onClick="if ('+Family' == this.value){ this.value = ''; this.style.color = '#000000';}"
+				onfocusout="if ('' == this.value) { this.value = '+Family'; this.style.color = '#AAAAAA';}"
 				> (<input type="text" id='nfPN' value="1" style="width:2em;"/> ч.) 
 			</div>
 			<div class="g cell bgcN">			
@@ -513,7 +529,7 @@
 		</div>
 		<div class="row">
 			<div class="empty cell bgcN">			
-				Траты: <input type="text" value="0" style="width: 4em" id='nfExp'/> р.
+				Expenses: <input type="text" value="0" style="width: 4em" id='nfExp'/> р.
 			</div>
 			<div class="empty cell bgcN">
 			</div>
@@ -553,6 +569,8 @@
 		</div>
 		<hr>
 		${addNewPohodUI}
+		<hr>
+		${currencySignUI}
 	</div>
 	</div>
 </div>

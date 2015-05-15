@@ -1,0 +1,1 @@
+This "application" is one-file html5 application that can be used to calculate budget of a trip when multiple families takes part in a trip, each family has expenses, and afterwards everyone needs to understand who spent less, who spent more.
