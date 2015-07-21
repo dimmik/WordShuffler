@@ -203,6 +203,10 @@
 		//alert("t: " + template);
 		template = template.replace(/\$\{currencySign\}/g, getCurrencySign());
 		div.innerHTML = template;
+		if (document.getElementById("tripSelect").options[document.getElementById("tripSelect").selectedIndex].value == -1)
+		{
+			document.getElementById('additions').style.visibility = 'visible';
+		}
 		//setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
 	}
 	function getpList(){
@@ -234,6 +238,8 @@
 		if (ps.selected > -1)
 		{
 			initCurrentTrip(ps.selected);
+		} else {
+			document.getElementById('additions').style.visibility = 'visible';
 		}
 	}
 
