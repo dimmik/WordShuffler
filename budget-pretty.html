@@ -16,6 +16,7 @@
 		this.name = name;
 		this.peoplesNum = peoplesNum;
 		this.expenses = expenses;
+		this.paid = 0;
 	}
 	Family.prototype.toDebugStr = function(){
 		return "f '" + this.name + "' of " + this.peoplesNum + " e: " + this.expenses; 
@@ -146,18 +147,20 @@
 		storeToLocalStorage(ps);
 		initCurrentTrip(pnum);
 	}
-	function updateFamily(pnum, fnum, name, peoplesNum, expenses){
+	function updateFamily(pnum, fnum, name, peoplesNum, expenses, paid){
 		var f = ps.trips[pnum].families[fnum];
+		//alert("paid: " + f.paid);
 		if (
 			f.name == name 
 			&& f.peoplesNum == peoplesNum 
-			&& f.expenses == expenses)
+			&& f.expenses == expenses
+			&& f.paid == paid)
 		{
 			return;
 		}
 		if (
-		name == '' || peoplesNum == '' || expenses == '' ||
-		name == null || peoplesNum == null || expenses == null
+		name == '' || peoplesNum == '' || expenses == '' || 
+		name == null || peoplesNum == null || expenses == null 
 		)
 		{
 			initCurrentTrip(pnum);
@@ -166,6 +169,7 @@
 		f.name = name;
 		f.peoplesNum = peoplesNum;
 		f.expenses = expenses;
+		f.paid = paid;
 		storeToLocalStorage(ps);
 		initCurrentTrip(pnum);
 	}
@@ -267,14 +271,15 @@
 		for (i = 0; i < p.families.length; i++)
 		{
 			var f = p.families[i];
-			var debt = f.debt(p.averageExpense())*1;
+			var debt = f.debt(p.averageExpense())*1 - f.paid;
 			var fTemplate = document.getElementById("oneFamilyTemplate").innerHTML;
 			o = fTemplate.replace(/\$\{name\}/g, f.name);
 			o = o.replace(/\$\{peoplesNum\}/g, f.peoplesNum * 1);
 			o = o.replace(/\$\{expenses\}/g, f.expenses);
 			o = o.replace(/\$\{expensesEval\}/g, eval(f.expenses));
+			o = o.replace(/\$\{paid\}/g, f.paid);
 			o = o.replace(/\$\{debt\}/g, debt.toFixed(0));
-			o = o.replace(/\$\{debtAbs\}/g, Math.abs(debt.toFixed(0)));
+			o = o.replace(/\$\{debtAbs\}/g, Math.abs((debt).toFixed(0)));
 			o = o.replace(/\$\{debtS\}/g, debt > 0 ? '1' : '0');
 			o = o.replace(/\$\{debtAction\}/g, debt > 0 ? 'give' : 'get');
 			o = o.replace(/\$\{pnum\}/g, pnum);
@@ -515,16 +520,21 @@
 	-- Одна семья
 	<div id='oneFamilyTemplate'>
 		<div class="bgc${mod2}">
-				<span><b style="cursor: pointer;" onClick="var n = prompt('Имя', '${name}');updateFamily(${pnum}, ${fnum}, n, '${peoplesNum}', '${expenses}');">${name}</b> 
-				<span style="cursor: pointer; display: inline;" onClick="var num = prompt('Сколько человек', '${peoplesNum}'); updateFamily(${pnum}, ${fnum}, '${name}', num, '${expenses}');">${peoplesNum}</span></span>
-				<span align="center" style="cursor: pointer;" onClick="var ex = prompt('Затраты', '${expenses}'); updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', ex);">${expensesEval}</span>
+				<span><b style="cursor: pointer;" onClick="var n = prompt('Имя', '${name}');if (n!=null)updateFamily(${pnum}, ${fnum}, n, '${peoplesNum}', '${expenses}', ${paid});">${name}</b> 
+				<span style="cursor: pointer; display: inline;" onClick="var num = prompt('Сколько человек', '${peoplesNum}'); if (num!=null)updateFamily(${pnum}, ${fnum}, '${name}', num, '${expenses}', ${paid});">${peoplesNum}</span></span>
+				<span align="center" style="cursor: pointer;" onClick="var ex = prompt('Затраты', '${expenses}'); if (ex!=null)updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', ex, ${paid});">${expensesEval}</span>
 				<span class="debt${debtS}">
-				${debtAction} <b>${debtAbs}</b></span>
+				${debtAction} <b style="cursor: pointer;" onClick="var pp = prompt('Уплочено', '${paid}');if (pp!=null)updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', '${expenses}', pp);">${debtAbs}</b></span>
 				<span style="cursor: pointer;" onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">-</span>
 		</div>
 	</div>
 	-- Список семей
 	<div id='familyListTemplate'>
+		<div style="font-size:50%;">
+		<span>Кто</span>
+		<span>Сколько</span>
+		<span>долг</span>
+		</div>
 			${families}
 	</div>	
 
@@ -573,6 +583,7 @@
 			${pHeaderUI}
 			<hr/>
 			<!-- Список семей -->
+			<b>Hit value to edit</b>
 			<div class="table-like">
 			${familiesListUI}
 			${addFamilyUI}
