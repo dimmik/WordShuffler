@@ -5,7 +5,7 @@
 <title>Trip Budget Calculator</title>
 <meta name="description" content="Расчет бюджета похода">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="dcterms.rightsHolder" content="Dmitry Andrievsky, ad@dimmik.org, May 2015">
+<meta name="dcterms.rightsHolder" content="Dmitry Andrievsky, ad@dimmik.org, Jul 2015">
 
 
 <script>
@@ -22,7 +22,7 @@
 	}
 	Family.prototype.debt = function(avg){
 		var toBeSpent = this.peoplesNum * avg;
-		return (toBeSpent - this.expenses);
+		return (toBeSpent - eval(this.expenses));
 	}
 	
 	// Trip
@@ -47,7 +47,7 @@
 		var totalExpense = 0;
 		for (var i = 0; i < this.families.length ; i ++)
 		{
-			totalExpense += this.families[i].expenses * 1;
+			totalExpense += eval(this.families[i].expenses) * 1;
 		}
 		return totalExpense;
 	}
@@ -260,7 +260,7 @@
 			var fTemplate = document.getElementById("oneFamilyTemplate").innerHTML;
 			o = fTemplate.replace(/\$\{name\}/g, f.name);
 			o = o.replace(/\$\{peoplesNum\}/g, f.peoplesNum * 1);
-			o = o.replace(/\$\{expenses\}/g, (f.expenses*1).toFixed(0));
+			o = o.replace(/\$\{expenses\}/g, f.expenses);
 			o = o.replace(/\$\{debt\}/g, debt.toFixed(0));
 			o = o.replace(/\$\{debtS\}/g, debt > 0 ? '1' : '0');
 			o = o.replace(/\$\{pnum\}/g, pnum);
@@ -501,13 +501,14 @@
 		</div>
 		<div class="row">
 			<div class="empty cell bgc${mod2}">			
-				Expenses: <input type="text" value="${expenses}" style="width: 4em"
+				Expenses: <input type="text" value="${expenses}" style="width: 16em"
 					onfocus="this.style.color = 'green';"
 					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', this.value);"
 
 				/> ${currencySign}
 			</div>
 			<div class="empty cell bgc${mod2}">
+				<input type="button" value="upd"/>
 			</div>
 		</div>
 	</div>
