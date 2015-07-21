@@ -261,8 +261,11 @@
 			o = fTemplate.replace(/\$\{name\}/g, f.name);
 			o = o.replace(/\$\{peoplesNum\}/g, f.peoplesNum * 1);
 			o = o.replace(/\$\{expenses\}/g, f.expenses);
+			o = o.replace(/\$\{expensesEval\}/g, eval(f.expenses));
 			o = o.replace(/\$\{debt\}/g, debt.toFixed(0));
+			o = o.replace(/\$\{debtAbs\}/g, Math.abs(debt.toFixed(0)));
 			o = o.replace(/\$\{debtS\}/g, debt > 0 ? '1' : '0');
+			o = o.replace(/\$\{debtAction\}/g, debt > 0 ? 'give' : 'get');
 			o = o.replace(/\$\{pnum\}/g, pnum);
 			o = o.replace(/\$\{fnum\}/g, i);
 			o = o.replace(/\$\{mod2\}/g, i%2);
@@ -493,7 +496,7 @@
 				/>
 			</div>
 			<div class="cell bgc${mod2} debt${debtS}">			
-				<b>${debt}</b> ${currencySign}
+				${debtAction} <b>${debtAbs}</b> ${currencySign}
 			</div>
 			<div class="cell bgc${mod2}">
 				<button onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">del</button>
@@ -508,6 +511,7 @@
 				/> ${currencySign}
 			</div>
 			<div class="empty cell bgc${mod2}">
+				${expensesEval}<br/>
 				<input type="button" value="upd"/>
 			</div>
 		</div>
