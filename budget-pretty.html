@@ -211,11 +211,15 @@
 		var optionTemplate = document.getElementById("tripOptionTemplate").innerHTML;
 		for (i = 0; i < ps.trips.length; i++)
 		{
+			var p = ps.trips[i];
 			var o = optionTemplate.replace(/\$\{name\}/g, ps.trips[i].name);
 			var d = ps.trips[i].date;
 			o = o.replace(/\$\{date\}/g, d.toDateString());
 			o = o.replace(/\$\{pnum\}/g, i);
 			o = o.replace(/\$\{selected\}/g, ps.selected == i ? 'selected' : '')
+			o = o.replace(/\$\{avgExpense\}/g, p.averageExpense().toFixed(0));
+			o = o.replace(/\$\{totalExpense\}/g, p.totalExpense().toFixed(0));
+			o = o.replace(/\$\{totalPeoples\}/g, p.totalPeoples().toFixed(1));
 			s += o;
 		}
 		t = t.replace(/\$\{trips\}/g, s);
@@ -491,7 +495,7 @@
 	</div>
 	-- Опция в списке походов
 	<div id='tripOptionTemplate'>
-		<option value='${pnum}' ${selected}>${name}</option>
+		<option value='${pnum}' ${selected}>${name} [${totalPeoples} / ${totalExpense}]</option>
 	</div>
 
 	-- Заголовок похода
