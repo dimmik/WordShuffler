@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -12,11 +13,11 @@
 	// *** Domain model ************************ 
 	
 	// Family
-	function Family(name, peoplesNum, expenses) {
+	function Family(name, peoplesNum, expenses, paid) {
 		this.name = name;
 		this.peoplesNum = peoplesNum;
 		this.expenses = expenses;
-		this.paid = 0;
+		this.paid = paid;
 	}
 	Family.prototype.toDebugStr = function(){
 		return "f '" + this.name + "' of " + this.peoplesNum + " e: " + this.expenses; 
@@ -84,7 +85,7 @@
 			for (var j = 0; j < ppp.families.length; j++)
 			{
 				var ff = ppp.families[j];
-				var family = new Family(ff.name, ff.peoplesNum, ff.expenses);
+				var family = new Family(ff.name, ff.peoplesNum, ff.expenses, ff.paid);
 				nP.families[nP.families.length] = family;
 			}
 			this.trips[this.trips.length] = nP;
@@ -101,13 +102,25 @@
 	// /*** Domain model ************************ 
 
 	// *** Storage ************************ 
+	function storeLS(name, val){
+		localStorage[name] = val;
+	}
+	function retrieveLS(name){
+		var v = localStorage[name];
+		return v;
+	}
+
+	var store = storeLS;
+	var retrieve = retrieveLS;
+
 	function storeToLocalStorage( lp ){
 		var json = JSON.stringify(lp);
-		localStorage.lp = json;
+		store('lp',json);
 	}
 	
 	function loadFromLocalStorage(){
-		var psJson = localStorage.lp;
+	//alert("ls: " + localStorage);
+		var psJson = retrieve('lp');
 		if (typeof(psJson) != 'undefined')
 		{
 			return new ListOfTrips(psJson);
@@ -115,9 +128,6 @@
 		return new ListOfTrips("");
 	}
 	
-	function clearLocalStorage(){
-		localStorage.removeItem("lp");
-	}
 
 	function addNewTrip(){
 		var p = new Trip(new Date(), document.getElementById('newTripName').value);
@@ -187,7 +197,7 @@
 	}
 	function importFromJSON(txt) {
 		var json = txt.value;
-		localStorage.lp = json;
+		store('lp', json);
 		init();
 	}
 	// /*** Storage ************************ 
@@ -313,45 +323,17 @@
 //		s += addF;
 		//div.innerHTML = s;
 	}
-	function toggleCollapsed(btn, collapsable){
-		var nowCollapsed = false;
-		if (typeof(localStorage.infoCollapsed) == 'undefined' )
-		{
-			nowCollapsed = true;
-		} else if (localStorage.infoCollapsed == 'Y')
-		{
-			nowCollapsed = true;
-		} else {
-			nowCollapsed = false;
-		}
-		//alert('now collapsed: ' + nowCollapsed);
-		var toggled = false;
-		if (nowCollapsed)
-		{
-			//alert('in if true ' + nowCollapsed);
-			toggled = false;
-		} else {
-			//alert('in else ' + nowCollapsed);
-			toggled = true;
-		}
-		//alert('toggled: ' + toggled);
-		localStorage.infoCollapsed = toggled ? 'Y' : 'N';
-		//setCollapsed(btn, collapsable);
-	}
-	/*function setCollapsed(btn, collapsable){
-		btn.innerHTML = localStorage.infoCollapsed == 'Y' ? '+' : '-';
-		collapsable.style.display = localStorage.infoCollapsed == 'Y' ? 'none' : 'block';
-	}*/
+
 	function getCurrencySign(){
-		var cc = localStorage.currentCurrencySign;
+		var cc = retrieve('currentCurrencySign');
 		if (typeof(cc) == 'undefined')
 		{
 			return 'р.';
 		}
-		return cc;
+		return '=';
 	}
 	function updateCurrencySign(sign){
-		localStorage.currentCurrencySign = sign;
+		store('currentCurrencySign', sign);
 		updateUI();
 	}
 	// /*** UI ******************************
@@ -570,11 +552,11 @@
 	</div>
 	<div id="jsonExportImportTemplate">
 		<div>
-			<button onClick="exportToJSON(document.getElementById('json'))"/>Export</button>
-			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))"/>Import</button>
+			<button onClick="exportToJSON(document.getElementById('json'))">Export</button>
+			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))">Import</button>
 			<textarea id='json' style="width: 100%; height: 10em;"></textarea><br/>
-			<button onClick="exportToJSON(document.getElementById('json'))"/>Export</button>
-			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))"/>Import</button>
+			<button onClick="exportToJSON(document.getElementById('json'))">Export</button>
+			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))">Import</button>
 			<hr/>
 		</div>
 	</div>
