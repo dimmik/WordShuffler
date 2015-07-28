@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -13,11 +12,10 @@
 	// *** Domain model ************************ 
 	
 	// Family
-	function Family(name, peoplesNum, expenses, paid) {
+	function Family(name, peoplesNum, expenses) {
 		this.name = name;
 		this.peoplesNum = peoplesNum;
 		this.expenses = expenses;
-		this.paid = paid;
 	}
 	Family.prototype.toDebugStr = function(){
 		return "f '" + this.name + "' of " + this.peoplesNum + " e: " + this.expenses; 
@@ -85,7 +83,7 @@
 			for (var j = 0; j < ppp.families.length; j++)
 			{
 				var ff = ppp.families[j];
-				var family = new Family(ff.name, ff.peoplesNum, ff.expenses, ff.paid);
+				var family = new Family(ff.name, ff.peoplesNum, ff.expenses);
 				nP.families[nP.families.length] = family;
 			}
 			this.trips[this.trips.length] = nP;
@@ -102,25 +100,13 @@
 	// /*** Domain model ************************ 
 
 	// *** Storage ************************ 
-	function storeLS(name, val){
-		localStorage[name] = val;
-	}
-	function retrieveLS(name){
-		var v = localStorage[name];
-		return v;
-	}
-
-	var store = storeLS;
-	var retrieve = retrieveLS;
-
 	function storeToLocalStorage( lp ){
 		var json = JSON.stringify(lp);
-		store('lp',json);
+		localStorage.lp = json;
 	}
 	
 	function loadFromLocalStorage(){
-	//alert("ls: " + localStorage);
-		var psJson = retrieve('lp');
+		var psJson = localStorage.lp;
 		if (typeof(psJson) != 'undefined')
 		{
 			return new ListOfTrips(psJson);
@@ -128,6 +114,9 @@
 		return new ListOfTrips("");
 	}
 	
+	function clearLocalStorage(){
+		localStorage.removeItem("lp");
+	}
 
 	function addNewTrip(){
 		var p = new Trip(new Date(), document.getElementById('newTripName').value);
@@ -143,34 +132,22 @@
 		cleanUIcontent();
 		initTripsListUI();
 	}
-	function cloneTrip(name, pnum){
-		var current = ps.trips[pnum];
-		var clone = new Trip(new Date(), name);
-		clone.families = current.families;
-		ps.add(clone);
-		storeToLocalStorage(ps);
-		ps = loadFromLocalStorage();
-		initTripsListUI();
-	}
 	function deleteFamily(pnum, fnum){
 		ps.trips[pnum].families.splice(fnum, 1);
 		storeToLocalStorage(ps);
 		initCurrentTrip(pnum);
 	}
-	function updateFamily(pnum, fnum, name, peoplesNum, expenses, paid){
+	function updateFamily(pnum, fnum, name, peoplesNum, expenses){
 		var f = ps.trips[pnum].families[fnum];
-		//alert("paid: " + f.paid);
 		if (
 			f.name == name 
 			&& f.peoplesNum == peoplesNum 
-			&& f.expenses == expenses
-			&& f.paid == paid)
+			&& f.expenses == expenses)
 		{
 			return;
 		}
 		if (
-		name == '' || peoplesNum == '' || expenses == '' || 
-		name == null || peoplesNum == null || expenses == null 
+		name == '' || peoplesNum == '' || expenses == ''
 		)
 		{
 			initCurrentTrip(pnum);
@@ -179,7 +156,6 @@
 		f.name = name;
 		f.peoplesNum = peoplesNum;
 		f.expenses = expenses;
-		f.paid = paid;
 		storeToLocalStorage(ps);
 		initCurrentTrip(pnum);
 	}
@@ -193,11 +169,10 @@
 	function exportToJSON(txt){
 		var json = JSON.stringify(ps, null, 4);
 		txt.value = json;
-		txt.focus(); txt.select();
 	}
 	function importFromJSON(txt) {
 		var json = txt.value;
-		store('lp', json);
+		localStorage.lp = json;
 		init();
 	}
 	// /*** Storage ************************ 
@@ -213,11 +188,7 @@
 		//alert("t: " + template);
 		template = template.replace(/\$\{currencySign\}/g, getCurrencySign());
 		div.innerHTML = template;
-		if (document.getElementById("tripSelect").options[document.getElementById("tripSelect").selectedIndex].value == -1)
-		{
-			document.getElementById('additions').style.visibility = 'visible';
-		}
-		//setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
+		setCollapsed(document.getElementById('collapseButton'),document.getElementById('collapsable'));
 	}
 	function getpList(){
 		var t = document.getElementById("tripsListTemplate").innerHTML;
@@ -225,15 +196,11 @@
 		var optionTemplate = document.getElementById("tripOptionTemplate").innerHTML;
 		for (i = 0; i < ps.trips.length; i++)
 		{
-			var p = ps.trips[i];
 			var o = optionTemplate.replace(/\$\{name\}/g, ps.trips[i].name);
 			var d = ps.trips[i].date;
 			o = o.replace(/\$\{date\}/g, d.toDateString());
 			o = o.replace(/\$\{pnum\}/g, i);
 			o = o.replace(/\$\{selected\}/g, ps.selected == i ? 'selected' : '')
-			o = o.replace(/\$\{avgExpense\}/g, p.averageExpense().toFixed(0));
-			o = o.replace(/\$\{totalExpense\}/g, p.totalExpense().toFixed(0));
-			o = o.replace(/\$\{totalPeoples\}/g, p.totalPeoples().toFixed(1));
 			s += o;
 		}
 		t = t.replace(/\$\{trips\}/g, s);
@@ -248,8 +215,6 @@
 		if (ps.selected > -1)
 		{
 			initCurrentTrip(ps.selected);
-		} else {
-			document.getElementById('additions').style.visibility = 'visible';
 		}
 	}
 
@@ -291,15 +256,14 @@
 		for (i = 0; i < p.families.length; i++)
 		{
 			var f = p.families[i];
-			var debt = f.debt(p.averageExpense())*1 - f.paid;
+			var debt = f.debt(p.averageExpense())*1;
 			var fTemplate = document.getElementById("oneFamilyTemplate").innerHTML;
 			o = fTemplate.replace(/\$\{name\}/g, f.name);
 			o = o.replace(/\$\{peoplesNum\}/g, f.peoplesNum * 1);
 			o = o.replace(/\$\{expenses\}/g, f.expenses);
 			o = o.replace(/\$\{expensesEval\}/g, eval(f.expenses));
-			o = o.replace(/\$\{paid\}/g, f.paid);
 			o = o.replace(/\$\{debt\}/g, debt.toFixed(0));
-			o = o.replace(/\$\{debtAbs\}/g, Math.abs((debt).toFixed(0)));
+			o = o.replace(/\$\{debtAbs\}/g, Math.abs(debt.toFixed(0)));
 			o = o.replace(/\$\{debtS\}/g, debt > 0 ? '1' : '0');
 			o = o.replace(/\$\{debtAction\}/g, debt > 0 ? 'give' : 'get');
 			o = o.replace(/\$\{pnum\}/g, pnum);
@@ -323,17 +287,45 @@
 //		s += addF;
 		//div.innerHTML = s;
 	}
-
+	function toggleCollapsed(btn, collapsable){
+		var nowCollapsed = false;
+		if (typeof(localStorage.infoCollapsed) == 'undefined' )
+		{
+			nowCollapsed = true;
+		} else if (localStorage.infoCollapsed == 'Y')
+		{
+			nowCollapsed = true;
+		} else {
+			nowCollapsed = false;
+		}
+		//alert('now collapsed: ' + nowCollapsed);
+		var toggled = false;
+		if (nowCollapsed)
+		{
+			//alert('in if true ' + nowCollapsed);
+			toggled = false;
+		} else {
+			//alert('in else ' + nowCollapsed);
+			toggled = true;
+		}
+		//alert('toggled: ' + toggled);
+		localStorage.infoCollapsed = toggled ? 'Y' : 'N';
+		setCollapsed(btn, collapsable);
+	}
+	function setCollapsed(btn, collapsable){
+		btn.innerHTML = localStorage.infoCollapsed == 'Y' ? '+' : '-';
+		collapsable.style.display = localStorage.infoCollapsed == 'Y' ? 'none' : 'block';
+	}
 	function getCurrencySign(){
-		var cc = retrieve('currentCurrencySign');
+		var cc = localStorage.currentCurrencySign;
 		if (typeof(cc) == 'undefined')
 		{
 			return 'р.';
 		}
-		return '=';
+		return cc;
 	}
 	function updateCurrencySign(sign){
-		store('currentCurrencySign', sign);
+		localStorage.currentCurrencySign = sign;
 		updateUI();
 	}
 	// /*** UI ******************************
@@ -370,24 +362,6 @@
 
 </head>
 <style>
-.table-like {
-  display: table;
-}
-
-.table-like div { 
-  display: table-row;
-}
-
-.table-like div span { 
-  display: table-cell;
-  padding: 0.2em;
-}
-
-/* add borders */
-.table-like,
-.table-like div span {
-  border: 1px solid black;  
-}
 
   .input-container {
     font-size: 1.5em;
@@ -483,17 +457,17 @@
 	</div>
 	-- Опция в списке походов
 	<div id='tripOptionTemplate'>
-		<option value='${pnum}' ${selected}>${name} [${totalPeoples} / ${totalExpense}]</option>
+		<option value='${pnum}' ${selected}>${name}</option>
 	</div>
 
 	-- Заголовок похода
 	<div id='tripHeaderTemplate'>
 		<div style="display:inline;" id="${id}">
-			<b>${name}</b> <span onclick="if (confirm('delete \'${name}\'?')) deleteTrip(${pnum});" style="cursor: pointer;">del</span>
-			<span 
-			style="cursor: pointer; border: 1px solid green;"
-			onclick="var newName = prompt('Name of new trip', '${name}'); if (newName != null) cloneTrip(newName, ${pnum});">clone</span>
-			<br><b>${totalPeoples}</b> чел. <b>${avgExpense}</b> / ${totalExpense}
+			<b>"${name}"</b> <button onclick="if (confirm('delete \'${name}\'?')) deleteTrip(${pnum});">del</button>
+			<br><span style="font-size: 0.7em;">${date}</span> 
+			<br>Total: <b>${totalExpense}</b> ${currencySign}
+			<br>People: <b>${totalPeoples}</b> 
+			<br>Average: <b>${avgExpense}</b> ${currencySign}
 		</div>
 	</div>
 
@@ -505,58 +479,87 @@
 				onClick="if ('+Trip' == this.value){ this.value = ''; this.style.color = '#000000';}"
 				onfocusout="if ('' == this.value) { this.value = '+Trip'; this.style.color = '#AAAAAA';}"
 				>
-			<button onClick="if ('+Trip' != this.value) addNewTrip()">Add</button>
+			<button onClick="if ('+Имя нового похода' != this.value) addNewTrip()">Add</button>
 		</div>
 	</div>
 
 	-- Одна семья
 	<div id='oneFamilyTemplate'>
-		<div class="bgc${mod2}">
-				<span><b style="cursor: pointer;" onClick="var n = prompt('Имя', '${name}');if (n!=null)updateFamily(${pnum}, ${fnum}, n, '${peoplesNum}', '${expenses}', ${paid});">${name}</b> 
-				<span style="cursor: pointer; display: inline;" onClick="var num = prompt('Сколько человек', '${peoplesNum}'); if (num!=null)updateFamily(${pnum}, ${fnum}, '${name}', num, '${expenses}', ${paid});">${peoplesNum}</span></span>
-				<span align="center" style="cursor: pointer;" onClick="var ex = prompt('Затраты', '${expenses}'); if (ex!=null)updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', ex, ${paid});">${expensesEval}</span>
-				<span class="debt${debtS}">
-				${debtAction} <b style="cursor: pointer;" onClick="var pp = prompt('Уплочено', '${paid}');if (pp!=null)updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', '${expenses}', pp);">${debtAbs}</b></span>
-				<span style="cursor: pointer;" onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">-</span>
+		<div class="row">
+			<div class="cell bgc${mod2}">
+				<input type="text" value="${name}" style="width: 80%" 
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, this.value, '${peoplesNum}', '${expenses}');"/> 
+				<input type="text" value="${peoplesNum}" style="width: 15%;"
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', this.value, '${expenses}');"
+				/>
+			</div>
+			<div class="cell bgc${mod2} debt${debtS}">			
+				${debtAction} <b>${debtAbs}</b> ${currencySign}
+			</div>
+			<div class="cell bgc${mod2}">
+				<button onclick="if (confirm('delete \'${name}\'?')) deleteFamily(${pnum}, ${fnum})">del</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="empty cell bgc${mod2}">			
+				Expenses: <input type="text" value="${expenses}" style="width: 16em"
+					onfocus="this.style.color = 'green';"
+					onfocusout="this.style.color = 'black'; updateFamily(${pnum}, ${fnum}, '${name}', '${peoplesNum}', this.value);"
+
+				/> ${currencySign}
+			</div>
+			<div class="empty cell bgc${mod2}">
+				${expensesEval}<br/>
+				<input type="button" value="upd"/>
+			</div>
 		</div>
 	</div>
 	-- Список семей
 	<div id='familyListTemplate'>
-		<div style="font-size:50%;">
-		<span>Кто</span>
-		<span>Сколько</span>
-		<span>долг</span>
-		</div>
 			${families}
 	</div>	
 
 	-- добавление новой семьи
 	<div id='addFamilyTemplate'>
-		<div>
-			<span>
-				<input 
-					type="text" 
-					id="nfName" 
-					value="+Family" 
-					style="color:#AAAAAA; width:80%;"
-					onClick="if ('+Family' == this.value){ this.value = ''; this.style.color = '#000000';}"
-					onfocusout="if ('' == this.value) { this.value = '+Family'; this.style.color = '#AAAAAA';}"
-					/>
-				<span style="display: inline;"><input type="text" id='nfPN' value="1" style="width:1em;"/></span>
-			</span>
-			<span>
-				<input type="text" value="0" style="width: 4em" id='nfExp'/>
-			</span>
-			<span style="cursor:pointer;" onClick="if (document.getElementById('nfName').value != '+Family') addNewFamily(${pnum})">Add</span>
+		<!--<div style="display:inline;" id="${id}">
+			name: <input type='text' id='nfName'> 
+			num: <input type='text' id='nfPN' value='1' size='2'> 
+			<b>exp:</b> <input type='text' id='nfExp' value='0' size='5'>
+			<button onClick='addNewFamily(${pnum})'>+</button><br/>
+		</div>-->
+
+	
+
+		<div class="row">
+			<div class="g cell bgcN">
+				<input type='text' id='nfName' style="width:10em;color:#AAAAAA"
+				value="+Family" 
+				onClick="if ('+Family' == this.value){ this.value = ''; this.style.color = '#000000';}"
+				onfocusout="if ('' == this.value) { this.value = '+Family'; this.style.color = '#AAAAAA';}"
+				> (<input type="text" id='nfPN' value="1" style="width:2em;"/> ч.) 
+			</div>
+			<div class="g cell bgcN">			
+				<center><b>--</b></center>
+			</div>
+			<div class="g cell bgcN">
+				<button onClick='addNewFamily(${pnum})'>add</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="empty cell bgcN">			
+				Expenses: <input type="text" value="0" style="width: 4em" id='nfExp'/> р.
+			</div>
+			<div class="empty cell bgcN">
+			</div>
 		</div>
 	</div>
 	<div id="jsonExportImportTemplate">
 		<div>
-			<button onClick="exportToJSON(document.getElementById('json'))">Export</button>
-			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))">Import</button>
-			<textarea id='json' style="width: 100%; height: 10em;"></textarea><br/>
-			<button onClick="exportToJSON(document.getElementById('json'))">Export</button>
-			<button onClick="if (confirm('Are you sure? Existing data will be lost.')) importFromJSON(document.getElementById('json'))">Import</button>
+			<textarea id='json' style="width: 40em; height: 15em;"></textarea><br/>
+			<button onClick="exportToJSON(document.getElementById('json'))"/>Export</button>
+			<button onClick="importFromJSON(document.getElementById('json'))"/>Import</button>
 			<hr/>
 		</div>
 	</div>
@@ -568,35 +571,38 @@
 	- Выбранный поход
 	- Детали выбранного похода
 	<div id="GenericUITemplate">
-
-		<div>
-			${pListUI}<br/>
-			<!-- Поход -->
-			${pHeaderUI}
-			<hr/>
-			<!-- Список семей -->
-			<b>Hit value to edit</b>
-			<div class="table-like">
-			${familiesListUI}
-			${addFamilyUI}
-			</div>
-			<!-- Всякая фигня - валюта и пр. Возможно вообще слева чтобы выезжала-->
-			<hr/>
-			<div>
-				<span style="cursor: pointer;" onClick="var a = document.getElementById('additions'); if (a.style.visibility == 'hidden') {a.style.visibility = 'visible';} else {a.style.visibility = 'hidden';}">
-					Всякая дополнительная фигня
-				</span>
-				<div id="additions" style="visibility: hidden;">
-					<hr>
-					${addNewTripUI}
-					<hr>
-					${currencySignUI}
-					<hr>
-					${jsonExportImportUI}
+	<div class="input-container">
+		<div id="${id}" class="tablewrapper">
+			<div class="table">
+				<div class="row">
+					<div class="empty cell">			
+						<div style="border: 1px solid blue;">
+							<button id="collapseButton" onClick="toggleCollapsed(this, document.getElementById('collapsable'));">-</button>
+							${pListUI}
+							<div id="collapsable">
+								${pHeaderUI}
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="empty cell">
+						<div class="table">
+						${familiesListUI}
+						${addFamilyUI}
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div><!--div id="GenericUITemplate"-->
+		<hr>
+		${addNewTripUI}
+		<hr>
+		${currencySignUI}
+		<hr>
+		${jsonExportImportUI}
+	</div>
+	</div>
 </div>
 
 </body>
