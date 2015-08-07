@@ -1,0 +1,102 @@
+<html>
+<head>
+<title>Char shuffler
+</title>
+<script>
+var shuffleRnd = function (s) {
+    var a = s.split(""),
+        n = a.length;
+
+    for(var i = n - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+    }
+    return a.join("");
+}
+var alphaSort = function (s) {
+    var a = s.split(""),
+        n = a.length;
+    a = a.sort();
+    return a.join("");
+}
+var vowelsFirst = function (s) {
+    var a = s.split(""),
+        n = a.length;
+    a = a.sort(compareVowelsFirst);
+    return a.join("");
+}
+var vowelsLast = function (s) {
+    var a = s.split(""),
+        n = a.length;
+    a = a.sort(compareVowelsLast);
+    return a.join("");
+}
+Array.prototype.contains = function(a){
+    return this.indexOf(a) >= 0;
+}
+function compareVowelsLast(a, b){
+    return -compareVowelsFirst(a, b);
+}
+function compareVowelsFirst(a, b){
+    var vowels = ['a','e','i','o','u','а', 'е','ё','и','о','у','ы','э','ю','я'];
+    if (vowels.contains(a) && !vowels.contains(b)){
+        return -1;
+    }
+    if (!vowels.contains(a) && vowels.contains(b)){
+        return 1;
+    }
+    return a > b ? 1 : (a == b ? 0 : -1);
+}
+function shuffle(shuffleFunc){
+    var inText = document.getElementById("in").value;
+    //alert("in:" + inText);
+    // split into words
+    var sep = /[\,\d\.\s\;\'\"\!\?\(\)\<\>\]\[\{\}\-\=\+]+/;
+    var words = inText.split(sep);
+    var wordsOut = [];
+    //alert("words: " + words.length);
+    for (var i = 0; i < words.length; i++){
+        wordsOut[i] = shuffleWord(words[i], shuffleFunc);
+    }
+    document.getElementById("out").value = wordsOut.join(" ");
+}
+function shuffleWord(w, shuffleFunc){
+    if (w.length < 4) return w;
+    var split = w.split("");
+    var first = split[0];
+    var last = split[split.length - 1];
+    var middle = w.substring(1, w.length-1);
+    return first + shuffleFunc(middle) + last;
+}
+</script>
+</head>
+<body>
+<!--
+По рзелульаттам илссеовадний одонго анлигйсокго унвиертисета, не иеемт занчнеия, в кокам пряокде рсапожолена бкувы в солве.
+Пичрионй эгото ялвятеся то, что мы не чиатем кдаужю бкуву по отдльенотси, а все солво цликеом. Галвоне, чотбы преавя и пслоендяя бквуы блыи на мсете. Осатьлыне бкувы мгоут селдовтаь в плоонм бсепордяке, все-рвано чтаитсея без побрелм.
+Может нафиг правила ) ?
+-->
+По рзелульаттам илссеовадний одонго анлигйсокго унвиертисета, не иеемт занчнеия, в кокам пряокде рсапожолена бкувы в солве.
+Пичрионй эгото ялвятеся то, что мы не чиатем кдаужю бкуву по отдльенотси, а все солво цликеом. Галвоне, чотбы преавя и пслоендяя бквуы блыи на мсете. Осатьлыне бкувы мгоут селдовтаь в плоонм бсепордяке, все-рвано чтаитсея без побрелм.
+Может нафиг правила ) ?
+<hr>
+I cnduo't bvleiee taht I culod aulaclty uesdtannrd waht I was rdnaieg. Unisg the icndeblire pweor of the hmuan mnid, aocdcrnig to rseecrah at Cmabrigde Uinervtisy, it dseno't mttaer in waht oderr the lterets in a wrod are, the olny irpoamtnt tihng is taht the frsit and lsat ltteer be in the rhgit pclae. The rset can be a taotl mses and you can sitll raed it whoutit a pboerlm. Tihs is bucseae the huamn mnid deos not raed ervey ltteer by istlef, but the wrod as a wlohe. Aaznmig, huh? Yaeh and I awlyas tghhuot slelinpg was ipmorantt! See if yuor fdreins can raed tihs too.
+<hr>
+Keep first and last letter, then shuffle others - you'll read it as well.
+<hr>
+Try it:<br/>
+    <textarea id="in" style="width: 100%; height: 300px;">По рзелульаттам илссеовадний одонго анлигйсокго унвиертисета, не иеемт занчнеия, в кокам пряокде рсапожолена бкувы в солве.
+Пичрионй эгото ялвятеся то, что мы не чиатем кдаужю бкуву по отдльенотси, а все солво цликеом. Галвоне, чотбы преавя и пслоендяя бквуы блыи на мсете. Осатьлыне бкувы мгоут селдовтаь в плоонм бсепордяке, все-рвано чтаитсея без побрелм.
+Может нафиг правила ) ?</textarea>
+<br/>
+<input type="button" value="shuffle random" onClick="shuffle(shuffleRnd);"/>
+<input type="button" value="sort alphabetically" onClick="shuffle(alphaSort);"/>
+<input type="button" value="sort vowels first" onClick="shuffle(vowelsFirst);"/>
+<input type="button" value="sort vowels last" onClick="shuffle(vowelsLast);"/>
+<br/>
+Result:<br>
+    <textarea id="out" style="width: 100%; height: 300px;"></textarea>
+</body>
+</html>
