@@ -40,7 +40,9 @@ function compareVowelsLast(a, b){
     return -compareVowelsFirst(a, b);
 }
 function compareVowelsFirst(a, b){
-    var vowels = ['a','e','i','o','u','а', 'е','ё','и','о','у','ы','э','ю','я'];
+    var vowels = ['a','e','i','o','u','а', 'е','ё','и','о','у','ы','э','ю','я',
+				  'A','E','I','O','U','А', 'Е','Ё','И','О','У','Ы','Э','Ю','Я'
+	];
     if (vowels.contains(a) && !vowels.contains(b)){
         return -1;
     }
@@ -53,14 +55,14 @@ function shuffle(shuffleFunc){
     var inText = document.getElementById("in").value;
     //alert("in:" + inText);
     // split into words
-    var sep = /[\,\d\.\s\;\'\"\!\?\(\)\<\>\]\[\{\}\-\=\+]+/;
+    var sep = /([\,\d\.\s\;\'\"\!\?\(\)\<\>\]\[\{\}\-\=\+]+)/g;
     var words = inText.split(sep);
     var wordsOut = [];
     //alert("words: " + words.length);
     for (var i = 0; i < words.length; i++){
-        wordsOut[i] = shuffleWord(words[i], shuffleFunc);
+        wordsOut[i] = words[i].match(sep) ? words[i] : shuffleWord(words[i], shuffleFunc);
     }
-    document.getElementById("out").value = wordsOut.join(" ");
+    document.getElementById("out").value = wordsOut.join("");
 }
 function shuffleWord(w, shuffleFunc){
     if (w.length < 4) return w;
